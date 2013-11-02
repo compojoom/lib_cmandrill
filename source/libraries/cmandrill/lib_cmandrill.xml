@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="library" version="2.5" method="upgrade">
+	<name>CMandrill</name>
+	<libraryname>cmandrill</libraryname>
+	<description>CMandrill is a joomla library that integrates with the Mandrill API!</description>
+	<creationDate>@@DATE@@</creationDate>
+	<author>compojoom.com</author>
+	<authorEmail>daniel@compojoom.com</authorEmail>
+	<authorUrl>https://www.akeebabackup.com</authorUrl>
+	<copyright>(C)2008-2013 Daniel Dimitrov</copyright>
+	<license>GNU GPLv2 or later</license>
+	<version>@@VERSION@@</version>
+
+	<files folder="cmandrill">
+		##LIBRARYFILES##
+	</files>
+</extension>
