@@ -11,7 +11,7 @@
 	<license>GNU GPLv2 or later</license>
 	<version>@@VERSION@@</version>
 
-	<files folder="cmandrill">
+	<files folder="libraries/cmandrill">
 		##LIBRARYFILES##
 	</files>
 </extension>
