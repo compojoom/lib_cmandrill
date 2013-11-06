@@ -145,28 +145,8 @@ class CmandrillQuery
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
 			curl_setopt($ch, CURLOPT_VERBOSE, $this->debug);
 
-			$start = microtime(true);
-			$this->log('Call to ' . $this->root . $url . '.json: ' . $params);
-
-			if ($this->debug)
-			{
-				$curl_buffer = fopen('php://memory', 'w+');
-				curl_setopt($ch, CURLOPT_STDERR, $curl_buffer);
-			}
-
 			$response_body = curl_exec($ch);
 			$info = curl_getinfo($ch);
-			$time = microtime(true) - $start;
-
-			if ($this->debug)
-			{
-				rewind($curl_buffer);
-				$this->log(stream_get_contents($curl_buffer));
-				fclose($curl_buffer);
-			}
-
-			$this->log('Completed in ' . number_format($time * 1000, 2) . 'ms');
-			$this->log('Got response: ' . $response_body);
 
 			if (curl_error($ch))
 			{
@@ -261,20 +241,5 @@ class CmandrillQuery
 		$class = (isset(self::$error_map[$result['name']])) ? self::$error_map[$result['name']] : 'Mandrill_Error';
 
 		return new $class($result['message'], $result['code']);
-	}
-
-	/**
-	 * Log a message
-	 *
-	 * @param   string  $msg  - the message
-	 *
-	 * @return void
-	 */
-	public function log($msg)
-	{
-		if ($this->debug)
-		{
-			error_log($msg);
-		}
 	}
 }
