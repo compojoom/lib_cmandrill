@@ -53,14 +53,16 @@ class CmandrillQuery
 	/**
 	 * The Constructor
 	 *
-	 * @param   string  $apikey   - the API key for Mandrill
-	 * @param   array   $options  - config options
+	 * @param   string  $apikey  - the API key for Mandrill
+	 * @param   bool    $ssl     - true if we should use ssl url
+	 * @param   bool    $cache   - true if we should cache the response
 	 *
 	 * @throws CMandrillExceptionsError
-	 * @internal param bool $ssl - true if we should use https uri
+	 * @internal param array $options - config options
 	 *
+	 * @internal param bool $ssl - true if we should use https uri
 	 */
-	public function __construct($apikey = null, $options = array('ssl' => true))
+	public function __construct($apikey = null, $ssl = true, $cache = false)
 	{
 		if (!$apikey)
 		{
@@ -79,16 +81,8 @@ class CmandrillQuery
 
 		$this->apikey = $apikey;
 
-		$this->ch = curl_init();
-		curl_setopt($this->ch, CURLOPT_USERAGENT, 'Mandrill-PHP/1.0.48');
-		curl_setopt($this->ch, CURLOPT_POST, true);
-		curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($this->ch, CURLOPT_HEADER, false);
-		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($this->ch, CURLOPT_CONNECTTIMEOUT, 30);
-		curl_setopt($this->ch, CURLOPT_TIMEOUT, 600);
-
-		$this->root = $this->setRoot($options['ssl']);
+		$this->root = $this->setRoot($ssl);
+		$this->cache = $cache;
 
 		$this->templates = new CmandrillTemplates($this);
 		$this->exports = new CmandrillExports($this);
@@ -107,15 +101,6 @@ class CmandrillQuery
 	}
 
 	/**
-	 * Deconstructor
-	 *
-	 */
-	public function __destruct()
-	{
-		curl_close($this->ch);
-	}
-
-	/**
 	 * Calls the mandrill API
 	 *
 	 * @param   string  $url     - the url to call
@@ -129,53 +114,83 @@ class CmandrillQuery
 	 */
 	public function call($url, $params)
 	{
+		$result = false;
 		$params['key'] = $this->apikey;
 		$params = json_encode($params);
-		$ch = $this->ch;
 
-		curl_setopt($ch, CURLOPT_URL, $this->root . $url . '.json');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
-		curl_setopt($ch, CURLOPT_VERBOSE, $this->debug);
-
-		$start = microtime(true);
-		$this->log('Call to ' . $this->root . $url . '.json: ' . $params);
-
-		if ($this->debug)
+		// Cache only if requested
+		if ($this->cache)
 		{
-			$curl_buffer = fopen('php://memory', 'w+');
-			curl_setopt($ch, CURLOPT_STDERR, $curl_buffer);
+			// Enable caching
+			$cacheObj = JFactory::getCache('lib_cmandrill', 'output');
+			$cacheObj->setCaching(true);
+			$id = md5($url.$params);
+			$result = $cacheObj->get($id);
 		}
 
-		$response_body = curl_exec($ch);
-		$info = curl_getinfo($ch);
-		$time = microtime(true) - $start;
-
-		if ($this->debug)
+		// So have we already cached the response?
+		if (!$result)
 		{
-			rewind($curl_buffer);
-			$this->log(stream_get_contents($curl_buffer));
-			fclose($curl_buffer);
+			$this->ch = $ch = curl_init();
+			curl_setopt($ch, CURLOPT_USERAGENT, 'Mandrill-PHP/1.0.48');
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_HEADER, false);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+
+			curl_setopt($ch, CURLOPT_URL, $this->root . $url . '.json');
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+			curl_setopt($ch, CURLOPT_VERBOSE, $this->debug);
+
+			$start = microtime(true);
+			$this->log('Call to ' . $this->root . $url . '.json: ' . $params);
+
+			if ($this->debug)
+			{
+				$curl_buffer = fopen('php://memory', 'w+');
+				curl_setopt($ch, CURLOPT_STDERR, $curl_buffer);
+			}
+
+			$response_body = curl_exec($ch);
+			$info = curl_getinfo($ch);
+			$time = microtime(true) - $start;
+
+			if ($this->debug)
+			{
+				rewind($curl_buffer);
+				$this->log(stream_get_contents($curl_buffer));
+				fclose($curl_buffer);
+			}
+
+			$this->log('Completed in ' . number_format($time * 1000, 2) . 'ms');
+			$this->log('Got response: ' . $response_body);
+
+			if (curl_error($ch))
+			{
+				throw new CMandrillExceptionsHttpError("API call to $url failed: " . curl_error($ch));
+			}
+
+			curl_close($this->ch);
+
+			$result = json_decode($response_body);
+
+			if ($result === null)
+			{
+				throw new CMandrillExceptionsError('We were unable to decode the JSON response from the Mandrill API: ' . $response_body);
+			}
+
+			if (floor($info['http_code'] / 100) >= 4)
+			{
+				throw $this->castError($result);
+			}
 		}
 
-		$this->log('Completed in ' . number_format($time * 1000, 2) . 'ms');
-		$this->log('Got response: ' . $response_body);
-
-		if (curl_error($ch))
+		if ($this->cache)
 		{
-			throw new CMandrillExceptionsHttpError("API call to $url failed: " . curl_error($ch));
-		}
-
-		$result = json_decode($response_body);
-
-		if ($result === null)
-		{
-			throw new CMandrillExceptionsError('We were unable to decode the JSON response from the Mandrill API: ' . $response_body);
-		}
-
-		if (floor($info['http_code'] / 100) >= 4)
-		{
-			throw $this->castError($result);
+			$cacheObj->store($result, $id);
 		}
 
 		return $result;
