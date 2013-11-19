@@ -132,7 +132,7 @@ class CmandrillQuery
 		if (!$result)
 		{
 			$this->ch = $ch = curl_init();
-			curl_setopt($ch, CURLOPT_USERAGENT, 'Mandrill-PHP/1.0.48');
+			curl_setopt($ch, CURLOPT_USERAGENT, 'lib_cmandrill-PHP/1.0.0');
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			curl_setopt($ch, CURLOPT_HEADER, false);
