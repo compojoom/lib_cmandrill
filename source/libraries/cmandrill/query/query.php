@@ -28,15 +28,15 @@ class CmandrillQuery
 
 	public static $error_map = array(
 		"ValidationError" => "CMandrillExceptionsValidation",
-		"Invalid_Key" => "CMandrillExceptionsInvalidkey",
-		"PaymentRequired" => "CMandrillExceptionsPaymentrequired",
-		"Unknown_Subaccount" => "CMandrillExceptionsPaymentrequired",
-		"Unknown_Template" => "CMandrillExceptionsUnknowntemplate",
-		"ServiceUnavailable" => "CMandrillExceptionsUnknowntemplate",
+		"Invalid_Key" => "CMandrillExceptionsInvalidKey",
+		"PaymentRequired" => "CMandrillExceptionsPaymentRequired",
+		"Unknown_Subaccount" => "CMandrillExceptionsPaymentRequired",
+		"Unknown_Template" => "CMandrillExceptionsUnknownTemplate",
+		"ServiceUnavailable" => "CMandrillExceptionsUnknownTemplate",
 		"Unknown_Message" => "CMandrillExceptionsUnknowMessage",
 		"Invalid_Tag_Name" => "CMandrillExceptionsInvalidTagname",
 		"Invalid_Reject" => "CMandrillExceptionsInvalidReject",
-		"Unknown_Sender" => "Mandrill_Unknown_Sender",
+		"Unknown_Sender" => "CMandrillExceptionsUnknownSender",
 		"Unknown_Url" => "CMandrillExceptionsUnknownUrl",
 		"Invalid_Template" => "CMandrillExceptionsInvalidTemplate",
 		"Unknown_Webhook" => "CMandrillExceptionsUnknownWebhook",
@@ -233,13 +233,13 @@ class CmandrillQuery
 	 */
 	public function castError($result)
 	{
-		if ($result['status'] !== 'error' || !$result['name'])
+		if ($result->status !== 'error' || !$result->name)
 		{
 			throw new CMandrillExceptionsError('We received an unexpected error: ' . json_encode($result));
 		}
 
-		$class = (isset(self::$error_map[$result['name']])) ? self::$error_map[$result['name']] : 'Mandrill_Error';
+		$class = (isset(self::$error_map[$result->name])) ? self::$error_map[$result->name] : 'Mandrill_Error';
 
-		return new $class($result['message'], $result['code']);
+		return new $class($result->message, $result->code);
 	}
 }

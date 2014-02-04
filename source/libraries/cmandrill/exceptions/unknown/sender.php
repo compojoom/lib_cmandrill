@@ -17,6 +17,6 @@ defined('_JEXEC') or die('Restricted access');
  * 
  * @since  3.0
  */
-class CMandrillExceptionsUnknownsender extends CMandrillExceptionsError
+class CMandrillExceptionsUnknownSender extends CMandrillExceptionsError
 {
 }
