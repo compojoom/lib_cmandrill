@@ -10,8 +10,9 @@ this library in their extensions
 Basic usage:
 
 ```php
+include 'PATH_TO_CMANDRILL_LIBRARY/include.php';
 $mandrill = new CmandrillQuery($apiKey, $ssl, $cache);
-$mandrill->message->send($message);
+$mandrill->messages->send($message);
 ```
 
 ## Building installable Joomla zip package from github
