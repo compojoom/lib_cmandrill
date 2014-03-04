@@ -11,7 +11,7 @@ Basic usage:
 
 ```php
 include 'PATH_TO_CMANDRILL_LIBRARY/include.php';
-$mandrill = new CmandrillQuery($apiKey, $ssl, $cache);
+$mandrill = new CmandrillQuery($apiKey, $ssl = true, $cache = false);
 $mandrill->messages->send($message);
 ```
 
